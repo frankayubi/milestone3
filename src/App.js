@@ -30,7 +30,7 @@ function App() {
 
   useEffect(() => {
     // Fetch the data
-    fetch('/titanic.csv')
+    fetch(`${process.env.PUBLIC_URL}/titanic.csv`)
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch data');
