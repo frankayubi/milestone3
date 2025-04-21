@@ -1,92 +1,128 @@
 # Titanic Dashboard
 
-An interactive data visualization dashboard for exploring the Titanic passenger dataset with filters, charts, and detailed passenger information.
+An interactive data visualization dashboard for exploring the Titanic passenger dataset.
+
+![Dashboard Preview](https://example.com/dashboard-preview.png)
 
 ## Features
 
 ### Interactive Filters
-- **Embarked Port Filter**: Filter passengers by port of embarkation (Cherbourg, Queenstown, Southampton)
-- **Passenger Status Filter**: Focus on all passengers, survivors only, or non-survivors only
-- **Age Range Slider**: Filter passengers by age (0-80 years)
+- **Embarkation Port Filter**: Filter by Cherbourg (C), Queenstown (Q), or Southampton (S)
+- **Passenger Status Filter**: View all passengers, survivors only, or non-survivors only
+- **Age Range Slider**: Filter passengers by age (0-80)
 - **Search Box**: Find specific passengers by name
 
 ### Visualizations
-1. **Summary Statistics Cards**
-   - Total passenger count
-   - Survivor count and percentage
-   - Average age
-   - Average fare
 
-2. **Bar Chart: Survival Count by Gender**
-   - Highlights gender-based survival disparities
+#### Summary Statistics Cards
+Quick-reference cards showing total passenger count, survival rates, average age, and average fare.
 
-3. **Pie Chart: Survival by Port of Embarkation**
-   - Shows how embarkation port correlates with survival rates
+#### Bar Chart: Survival Count by Gender
+Highlights gender-based survival disparities with color-coded bars.
 
-4. **Stacked Bar Chart: Class Distribution of Survivors by Age Group**
-   - Demonstrates how both class and age influenced survival odds
+#### Pie Chart: Survival by Port of Embarkation
+Shows how embarkation port correlates with survival rates.
 
-5. **Scatter Plot: Fare vs Age**
-   - Points colored by survival status
-   - Point size represents family size (SibSp + Parch)
-   - Interactive tooltips with passenger details
+#### Stacked Bar Chart: Class Distribution of Survivors by Age Group
+Demonstrates how both class and age influenced survival odds.
 
-6. **Histogram: Fare Distribution**
-   - Shows fare distribution with survival breakdown
+#### Scatter Plot: Fare vs Age
+- Points colored by survival status
+- Point size represents family size
+- Interactive tooltips with passenger details
 
-7. **Heatmap: Cabin Section vs Survival**
-   - Visualizes potential spatial survival patterns on the ship based on cabin letter prefixes
+#### Histogram: Fare Distribution
+Shows fare distribution with survival breakdown.
 
-8. **Data Table**
-   - Searchable, paginated table with detailed passenger information
-   - Tooltip reveals ticket information
-   - Color-coded rows based on survival status
+#### Heatmap: Cabin Section vs Survival
+Visualizes potential spatial survival patterns based on cabin letter prefixes.
+
+#### Data Table
+Searchable, paginated data table with detailed passenger information.
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js and npm installed
+- Node.js (v14 or later)
+- npm (v6 or later)
 
 ### Installation
+
 1. Clone the repository
-2. Install dependencies: `npm install`
-3. Place the `titanic.csv` file in the `public` folder
-4. Start the development server: `npm start`
+   ```bash
+   git clone https://github.com/yourusername/titanic-dashboard.git
+   cd titanic-dashboard
+   ```
+
+2. Install dependencies
+   ```bash
+   npm install
+   ```
+
+3. Place the Titanic dataset CSV file in the public folder
+   ```bash
+   cp path/to/your/titanic.csv public/
+   ```
+
+4. Start the development server
+   ```bash
+   npm start
+   ```
+
+5. Open your browser and navigate to http://localhost:3000
+
+## Project Structure
+
+```
+titanic-dashboard/
+│
+├── public/
+│   └── titanic.csv         # Dataset
+│
+├── src/
+│   ├── components/         # Reusable components
+│   │   ├── Controls.js     # Filter controls
+│   │   ├── DataTable.js    # Paginated data table
+│   │   ├── StatsCards.js   # Summary statistics
+│   │   └── charts/         # Visualization components
+│   │
+│   ├── utils/              # Utility functions
+│   │   ├── dataProcessing.js
+│   │   └── constants.js
+│   │
+│   ├── App.js              # Main component
+│   └── App.css             # Styles
+│
+└── README.md
+```
 
 ## Data Source
-The dashboard uses the Titanic passenger dataset, which includes:
+
+This dashboard uses the Titanic passenger dataset, which includes:
+
 - Demographics (age, gender)
 - Ticket information (class, fare, cabin)
 - Family relationships (siblings/spouses, parents/children)
 - Survival status
 
-## Implementation Details
+## Technologies Used
 
-### Dashboard Components Organization
+- React.js - Frontend framework
+- Recharts - Chart visualization library
+- CSS - Custom styling with responsive design
 
-The dashboard layout is designed to fit on a single screen without scrolling, using a responsive grid system that adapts to different screen sizes. Components are organized in a logical flow:
+## Design Principles
 
-1. **Control Panel** - Top section with all interactive filters
-2. **Summary Statistics** - Key metrics displayed prominently 
-3. **Primary Visualizations** - Main charts showing critical relationships
-4. **Secondary Visualizations** - Additional charts for deeper analysis
-5. **Data Table** - Bottom section for detailed passenger data exploration
+- **Clean Layout**: All visuals fit on one page without scrolling
+- **Effective Encoding**: Uses color, size, and position consistently for clarity
+- **User-Focused**: Designed for both historical analysis and data exploration
+- **Minimized Clutter**: Avoids 3D charts, redundant visuals, or overly saturated colors
 
-### Interactivity Implementation
+## License
 
-All visualizations are dynamically updated based on user filter selections:
-- The **Embarked Filter** updates the pie chart and all other visualizations
-- The **Passenger Filter** allows focusing on survivors, non-survivors, or all passengers
-- The **Age Slider** updates the stacked bar chart and all other visualizations
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### Technology Stack
-- **React**: Front-end framework
-- **Recharts**: Chart visualization library
-- **CSS**: Custom styling with responsive design
+## Acknowledgments
 
-## Design Principles Applied
-
-1. **Clean Layout**: All visuals fit on one page without scrolling
-2. **Effective Encoding**: Uses color, size, and position consistently for clarity
-3. **User-Focused**: Historians can study class and gender effects; data scientists can test model hypotheses visually
-4. **Minimized Clutter**: Avoids 3D charts, redundant visuals, or overly saturated colors
+- Titanic passenger data provided by [Kaggle](https://www.kaggle.com/c/titanic)
+- Inspired by data visualization best practices from Edward Tufte and Stephen Few

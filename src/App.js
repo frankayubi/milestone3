@@ -1,85 +1,142 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-         PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis, 
-         LineChart, Line, AreaChart, Area } from 'recharts';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis
+} from 'recharts';
 import './App.css';
+
+// Import components
+import Controls from './components/Controls';
+import StatsCards from './components/StatsCards';
+import DataTable from './components/DataTable';
+import BarChartComponent from './components/charts/BarChart';
+import PieChartComponent from './components/charts/PieChart';
+import ScatterPlotComponent from './components/charts/ScatterPlot';
+import StackedBarChartComponent from './components/charts/StackedBarChart';
+import FareHistogramComponent from './components/charts/FareHistogram';
+import CabinHeatmapComponent from './components/charts/CabinHeatmap';
 
 function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Filter states
   const [embarkedFilter, setEmbarkedFilter] = useState('all');
   const [passengerFilter, setPassengerFilter] = useState('all');
   const [ageRange, setAgeRange] = useState([0, 80]);
-  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const rowsPerPage = 10;
 
   useEffect(() => {
-    // In a real app, this would fetch data from an API
-    // For this demo, we'll load it from a CSV file
+    // Fetch the data
     fetch('/titanic.csv')
-      .then(response => response.text())
-      .then(text => {
-        const parsedData = parseCSV(text);
-        setData(parsedData);
-        setLoading(false);
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch data');
+        }
+        return response.text();
       })
-      .catch(error => {
-        console.error('Error loading data:', error);
+      .then(text => {
+        try {
+          const parsedData = parseCSV(text);
+          setData(parsedData);
+          setLoading(false);
+        } catch (err) {
+          setError('Error parsing CSV data: ' + err.message);
+          setLoading(false);
+        }
+      })
+      .catch(err => {
+        setError('Error loading data: ' + err.message);
         setLoading(false);
       });
   }, []);
 
-  // Function to parse CSV data
+  // Parse CSV data
   const parseCSV = (text) => {
     const lines = text.split('\n');
-    const headers = lines[0].split(',');
+    if (lines.length < 2) {
+      throw new Error('CSV file is empty or invalid');
+    }
     
-    return lines.slice(1).filter(line => line.trim()).map(line => {
-      const values = line.split(',');
-      const entry = {};
-      
-      headers.forEach((header, index) => {
-        let value = values[index];
-        if (header === 'Age' || header === 'Fare') {
-          value = parseFloat(value) || 0;
-        } else if (header === 'Survived' || header === 'Pclass' || header === 'SibSp' || header === 'Parch') {
-          value = parseInt(value, 10) || 0;
+    const headers = lines[0].split(',').map(h => h.trim());
+    
+    return lines.slice(1)
+      .filter(line => line.trim()) // Remove empty lines
+      .map(line => {
+        // Handle commas within quoted strings
+        const values = [];
+        let insideQuotes = false;
+        let currentValue = '';
+        
+        for (let char of line) {
+          if (char === '"' && !insideQuotes) {
+            insideQuotes = true;
+          } else if (char === '"' && insideQuotes) {
+            insideQuotes = false;
+          } else if (char === ',' && !insideQuotes) {
+            values.push(currentValue);
+            currentValue = '';
+          } else {
+            currentValue += char;
+          }
         }
-        entry[header.trim()] = value;
+        values.push(currentValue); // Add the last value
+        
+        // Create an object from headers and values
+        const entry = {};
+        headers.forEach((header, index) => {
+          let value = values[index] || '';
+          
+          // Convert numeric values
+          if (header === 'Age' || header === 'Fare') {
+            value = parseFloat(value) || 0;
+          } else if (header === 'Survived' || header === 'Pclass' || header === 'SibSp' || header === 'Parch') {
+            value = parseInt(value, 10) || 0;
+          } else if (header === 'Embarked') {
+            // Ensure Embarked is properly formatted - trim any whitespace
+            value = value.trim();
+          }
+          
+          entry[header] = value;
+        });
+        
+        // Add derived fields
+        // Extract cabin prefix
+        if (entry.Cabin && entry.Cabin !== '') {
+          entry.CabinPrefix = entry.Cabin.charAt(0);
+        } else {
+          entry.CabinPrefix = 'Unknown';
+        }
+        
+        // Add age group
+        if (entry.Age < 10) entry.AgeGroup = '0-10';
+        else if (entry.Age < 20) entry.AgeGroup = '10-20';
+        else if (entry.Age < 30) entry.AgeGroup = '20-30';
+        else if (entry.Age < 40) entry.AgeGroup = '30-40';
+        else if (entry.Age < 50) entry.AgeGroup = '40-50';
+        else if (entry.Age < 60) entry.AgeGroup = '50-60';
+        else if (entry.Age < 70) entry.AgeGroup = '60-70';
+        else entry.AgeGroup = '70+';
+        
+        // Add family size
+        entry.FamilySize = entry.SibSp + entry.Parch;
+        
+        return entry;
       });
-      
-      // Extract cabin prefix for the heatmap
-      if (entry.Cabin && entry.Cabin !== '') {
-        entry.CabinPrefix = entry.Cabin.charAt(0);
-      } else {
-        entry.CabinPrefix = 'Unknown';
-      }
-      
-      // Add age group for the stacked bar chart
-      if (entry.Age < 10) entry.AgeGroup = '0-10';
-      else if (entry.Age < 20) entry.AgeGroup = '10-20';
-      else if (entry.Age < 30) entry.AgeGroup = '20-30';
-      else if (entry.Age < 40) entry.AgeGroup = '30-40';
-      else if (entry.Age < 50) entry.AgeGroup = '40-50';
-      else if (entry.Age < 60) entry.AgeGroup = '50-60';
-      else if (entry.Age < 70) entry.AgeGroup = '60-70';
-      else entry.AgeGroup = '70+';
-      
-      // Add total family size
-      entry.FamilySize = entry.SibSp + entry.Parch;
-      
-      return entry;
-    });
   };
 
   // Filter data based on user selections
   const getFilteredData = () => {
     return data.filter(passenger => {
-      // Filter by embarked port
-      if (embarkedFilter !== 'all' && passenger.Embarked !== embarkedFilter) {
-        return false;
+      // Filter by embarked port - More robust version
+      if (embarkedFilter !== 'all') {
+        // Handle possible undefined values and ensure proper comparison
+        const embarkedValue = passenger.Embarked ? passenger.Embarked.trim() : '';
+        if (embarkedValue !== embarkedFilter) {
+          return false;
+        }
       }
       
       // Filter by survival status
@@ -116,8 +173,6 @@ function App() {
     
     return { total, survivors, survivalRate, avgAge, avgFare };
   };
-  
-  const stats = getSummaryStats();
 
   // Prepare data for gender survival chart
   const getGenderSurvivalData = () => {
@@ -127,7 +182,7 @@ function App() {
     filteredData.forEach(passenger => {
       if (passenger.Sex === 'male') {
         passenger.Survived ? maleData.survived++ : maleData.died++;
-      } else {
+      } else if (passenger.Sex === 'female') {
         passenger.Survived ? femaleData.survived++ : femaleData.died++;
       }
     });
@@ -142,16 +197,26 @@ function App() {
     return ageGroups.map(group => {
       const groupData = { ageGroup: group, class1: 0, class2: 0, class3: 0 };
       
-      filteredData
-        .filter(p => p.AgeGroup === group && p.Survived === 1)
-        .forEach(p => {
+      // Get passengers in this age group from the already filtered data
+      // (this respects the current embarked filter and age range selections)
+      const ageGroupPassengers = filteredData.filter(p => p.AgeGroup === group);
+      
+      // Apply the appropriate passenger filter
+      ageGroupPassengers.forEach(p => {
+        // Only count passengers according to the selected filter
+        if (
+          (passengerFilter === 'all') ||
+          (passengerFilter === 'survivors' && p.Survived === 1) ||
+          (passengerFilter === 'non-survivors' && p.Survived === 0)
+        ) {
           if (p.Pclass === 1) groupData.class1++;
           else if (p.Pclass === 2) groupData.class2++;
           else if (p.Pclass === 3) groupData.class3++;
-        });
+        }
+      });
       
       return groupData;
-    });
+    }).filter(group => group.class1 > 0 || group.class2 > 0 || group.class3 > 0);
   };
 
   // Prepare data for pie chart (embarked vs survival)
@@ -159,9 +224,11 @@ function App() {
     const counts = { C: { survived: 0, total: 0 }, Q: { survived: 0, total: 0 }, S: { survived: 0, total: 0 } };
     
     filteredData.forEach(p => {
-      if (p.Embarked && (p.Embarked === 'C' || p.Embarked === 'Q' || p.Embarked === 'S')) {
-        counts[p.Embarked].total++;
-        if (p.Survived === 1) counts[p.Embarked].survived++;
+      // Ensure we have a valid Embarked value
+      const embarked = p.Embarked ? p.Embarked.trim() : '';
+      if (embarked && (embarked === 'C' || embarked === 'Q' || embarked === 'S')) {
+        counts[embarked].total++;
+        if (p.Survived === 1) counts[embarked].survived++;
       }
     });
     
@@ -182,7 +249,8 @@ function App() {
       fare: p.Fare > 200 ? 200 : p.Fare, // Cap fare for better visualization
       survived: p.Survived,
       familySize: p.FamilySize,
-      name: p.Name
+      name: p.Name,
+      class: p.Pclass
     }));
   };
 
@@ -227,16 +295,12 @@ function App() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#83a6ed'];
   const SURVIVAL_COLORS = { 0: '#ff8884', 1: '#82ca9d' };
 
-  // Handler for table pagination
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-  };
-
-  const tableData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-
   if (loading) {
     return <div className="loading">Loading data...</div>;
+  }
+
+  if (error) {
+    return <div className="error">Error: {error}</div>;
   }
 
   return (
@@ -244,113 +308,30 @@ function App() {
       <h1>Titanic Passenger Dashboard</h1>
       
       {/* Controls Section */}
-      <div className="controls">
-        <div className="control-group">
-          <label>Port of Embarkation:</label>
-          <select 
-            value={embarkedFilter} 
-            onChange={(e) => setEmbarkedFilter(e.target.value)}
-          >
-            <option value="all">All Ports</option>
-            <option value="C">Cherbourg</option>
-            <option value="Q">Queenstown</option>
-            <option value="S">Southampton</option>
-          </select>
-        </div>
-        
-        <div className="control-group">
-          <label>Passenger Filter:</label>
-          <select 
-            value={passengerFilter} 
-            onChange={(e) => setPassengerFilter(e.target.value)}
-          >
-            <option value="all">All Passengers</option>
-            <option value="survivors">Survivors Only</option>
-            <option value="non-survivors">Non-Survivors Only</option>
-          </select>
-        </div>
-        
-        <div className="control-group">
-          <label>Age Range: {ageRange[0]} - {ageRange[1]}</label>
-          <div className="range-slider">
-            <input 
-              type="range" 
-              min="0" 
-              max="80" 
-              value={ageRange[0]} 
-              onChange={(e) => setAgeRange([parseInt(e.target.value, 10), ageRange[1]])}
-            />
-            <input 
-              type="range" 
-              min="0" 
-              max="80" 
-              value={ageRange[1]} 
-              onChange={(e) => setAgeRange([ageRange[0], parseInt(e.target.value, 10)])}
-            />
-          </div>
-        </div>
-      </div>
+      <Controls 
+        embarkedFilter={embarkedFilter}
+        setEmbarkedFilter={setEmbarkedFilter}
+        passengerFilter={passengerFilter}
+        setPassengerFilter={setPassengerFilter}
+        ageRange={ageRange}
+        setAgeRange={setAgeRange}
+      />
       
       {/* Summary Statistics Cards */}
-      <div className="stat-cards">
-        <div className="stat-card">
-          <h3>Total Passengers</h3>
-          <p>{stats.total}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Survivors</h3>
-          <p>{stats.survivors} ({stats.survivalRate}%)</p>
-        </div>
-        <div className="stat-card">
-          <h3>Average Age</h3>
-          <p>{stats.avgAge} years</p>
-        </div>
-        <div className="stat-card">
-          <h3>Average Fare</h3>
-          <p>${stats.avgFare}</p>
-        </div>
-      </div>
+      <StatsCards stats={getSummaryStats()} />
       
       {/* Charts Row 1 */}
       <div className="charts-row">
         {/* Bar Chart: Survival by Gender */}
         <div className="chart-container">
           <h2>Survival Count by Gender</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={getGenderSurvivalData()}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="gender" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="survived" name="Survived" fill={SURVIVAL_COLORS[1]} />
-              <Bar dataKey="died" name="Did Not Survive" fill={SURVIVAL_COLORS[0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <BarChartComponent data={getGenderSurvivalData()} colors={SURVIVAL_COLORS} />
         </div>
         
         {/* Pie Chart: Embarked vs Survival */}
         <div className="chart-container">
           <h2>Survival by Port of Embarkation</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={getEmbarkedSurvivalData()}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-                label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {getEmbarkedSurvivalData().map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          <PieChartComponent data={getEmbarkedSurvivalData()} />
         </div>
       </div>
       
@@ -358,67 +339,14 @@ function App() {
       <div className="charts-row">
         {/* Stacked Bar: Class Distribution by Age Group */}
         <div className="chart-container">
-          <h2>Class Distribution of Survivors by Age Group</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={getClassByAgeData()}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="ageGroup" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="class1" name="1st Class" stackId="a" fill="#8884d8" />
-              <Bar dataKey="class2" name="2nd Class" stackId="a" fill="#82ca9d" />
-              <Bar dataKey="class3" name="3rd Class" stackId="a" fill="#ffc658" />
-            </BarChart>
-          </ResponsiveContainer>
+          <h2>Class Distribution of Passengers by Age Group</h2>
+          <StackedBarChartComponent data={getClassByAgeData()} />
         </div>
         
         {/* Scatter Plot: Age vs Fare vs Survival */}
         <div className="chart-container">
           <h2>Fare vs Age (Colored by Survival)</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-              <CartesianGrid />
-              <XAxis type="number" dataKey="age" name="Age" />
-              <YAxis type="number" dataKey="fare" name="Fare" />
-              <ZAxis type="number" dataKey="familySize" range={[40, 200]} name="Family Size" />
-              <Tooltip cursor={{ strokeDasharray: '3 3' }} 
-                content={({ payload }) => {
-                  if (payload && payload.length) {
-                    const data = payload[0].payload;
-                    return (
-                      <div className="custom-tooltip">
-                        <p>{`Name: ${data.name}`}</p>
-                        <p>{`Age: ${data.age}`}</p>
-                        <p>{`Fare: $${data.fare}`}</p>
-                        <p>{`Family Size: ${data.familySize}`}</p>
-                        <p>{`Status: ${data.survived ? 'Survived' : 'Died'}`}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Legend />
-              <Scatter 
-                name="Passengers" 
-                data={getScatterData()} 
-                fill="#8884d8"
-                shape={(props) => {
-                  const { cx, cy, fill, payload } = props;
-                  return (
-                    <circle 
-                      cx={cx} 
-                      cy={cy} 
-                      r={4 + payload.familySize} 
-                      fill={payload.survived ? SURVIVAL_COLORS[1] : SURVIVAL_COLORS[0]}
-                      stroke="#fff"
-                    />
-                  );
-                }}
-              />
-            </ScatterChart>
-          </ResponsiveContainer>
+          <ScatterPlotComponent data={getScatterData()} colors={SURVIVAL_COLORS} />
         </div>
       </div>
       
@@ -427,129 +355,22 @@ function App() {
         {/* Histogram: Fare Distribution */}
         <div className="chart-container">
           <h2>Fare Distribution</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={getFareHistogram()}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="range" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="survived" name="Survived" fill={SURVIVAL_COLORS[1]} />
-              <Bar dataKey="count" name="Total" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
+          <FareHistogramComponent data={getFareHistogram()} colors={SURVIVAL_COLORS} />
         </div>
         
         {/* Heat Map: Cabin Letter vs Survival */}
         <div className="chart-container">
           <h2>Cabin Section vs Survival</h2>
-          <div className="heatmap">
-            <table className="heatmap-table">
-              <thead>
-                <tr>
-                  <th>Cabin</th>
-                  <th>Survived</th>
-                  <th>Died</th>
-                  <th>Survival Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'T', 'Unknown'].map(cabin => {
-                  const cabinData = getCabinHeatmap();
-                  const survived = cabinData.find(d => d.cabin === cabin && d.status === 'Survived')?.count || 0;
-                  const died = cabinData.find(d => d.cabin === cabin && d.status === 'Died')?.count || 0;
-                  const total = survived + died;
-                  const rate = total ? ((survived / total) * 100).toFixed(1) : '0';
-                  
-                  // Skip if no passengers in this cabin
-                  if (total === 0) return null;
-                  
-                  // Calculate color based on survival rate
-                  const intensity = Math.min(survived / total * 255, 255);
-                  const bgColor = `rgba(${255 - intensity}, ${intensity}, 100, 0.7)`;
-                  
-                  return (
-                    <tr key={cabin}>
-                      <td>{cabin}</td>
-                      <td>{survived}</td>
-                      <td>{died}</td>
-                      <td style={{ backgroundColor: bgColor }}>{rate}%</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <CabinHeatmapComponent data={getCabinHeatmap()} />
         </div>
       </div>
       
       {/* Data Table */}
-      <div className="data-table-container">
-        <h2>Passenger Data</h2>
-        
-        <div className="table-controls">
-          <input 
-            type="text" 
-            placeholder="Search by name..." 
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page when searching
-            }}
-          />
-          
-          <div className="pagination">
-            <button 
-              onClick={() => handlePageChange(currentPage - 1)} 
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-            <span>Page {currentPage} of {totalPages}</span>
-            <button 
-              onClick={() => handlePageChange(currentPage + 1)} 
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-        
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Age</th>
-                <th>Sex</th>
-                <th>Class</th>
-                <th>Fare</th>
-                <th>Cabin</th>
-                <th>Embarked</th>
-                <th>Survived</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableData.map((passenger, index) => (
-                <tr key={index} className={passenger.Survived ? 'survived' : 'died'}>
-                  <td title={`Ticket: ${passenger.Ticket}`}>{passenger.Name}</td>
-                  <td>{passenger.Age}</td>
-                  <td>{passenger.Sex}</td>
-                  <td>{passenger.Pclass}</td>
-                  <td>${passenger.Fare.toFixed(2)}</td>
-                  <td>{passenger.Cabin || 'Unknown'}</td>
-                  <td>{passenger.Embarked || 'Unknown'}</td>
-                  <td>{passenger.Survived ? 'Yes' : 'No'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className="table-footer">
-          Showing {tableData.length} of {filteredData.length} passengers
-        </div>
-      </div>
+      <DataTable 
+        data={filteredData} 
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
     </div>
   );
 }
