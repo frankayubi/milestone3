@@ -1,5 +1,6 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
+import Papa from 'papaparse';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis
@@ -17,6 +18,9 @@ import StackedBarChartComponent from './components/charts/StackedBarChart';
 import FareHistogramComponent from './components/charts/FareHistogram';
 import CabinHeatmapComponent from './components/charts/CabinHeatmap';
 
+// Import the CSV file directly
+import titanicCsvFile from './titanic.csv';
+
 function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,29 +33,81 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // Fetch the data
-    fetch(`${process.env.PUBLIC_URL}/titanic.csv`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch data');
-        }
-        return response.text();
-      })
-      .then(text => {
+    // Parse the imported CSV file
+    fetch(titanicCsvFile)
+      .then(response => response.text())
+      .then(csvText => {
         try {
-          const parsedData = parseCSV(text);
-          setData(parsedData);
-          setLoading(false);
+          // Use PapaParse to parse the CSV data
+          Papa.parse(csvText, {
+            header: true,
+            dynamicTyping: true, // Automatically convert numbers
+            complete: (results) => {
+              if (results.errors.length > 0) {
+                console.error('CSV parsing errors:', results.errors);
+                setError('Error parsing CSV data');
+              } else {
+                // Process the parsed data
+                const processedData = results.data
+                  .filter(row => Object.keys(row).length > 1) // Filter out empty rows
+                  .map(row => {
+                    // Add derived fields
+                    // Ensure numeric fields are numeric
+                    row.Age = row.Age || 0;
+                    row.Fare = row.Fare || 0;
+                    row.Survived = (row.Survived === 1 || row.Survived === true) ? 1 : 0;
+                    row.Pclass = row.Pclass || 0;
+                    row.SibSp = row.SibSp || 0;
+                    row.Parch = row.Parch || 0;
+                    
+                    // Extract cabin prefix
+                    if (row.Cabin && row.Cabin !== '') {
+                      row.CabinPrefix = row.Cabin.charAt(0);
+                    } else {
+                      row.CabinPrefix = 'Unknown';
+                    }
+                    
+                    // Add age group
+                    if (row.Age < 10) row.AgeGroup = '0-10';
+                    else if (row.Age < 20) row.AgeGroup = '10-20';
+                    else if (row.Age < 30) row.AgeGroup = '20-30';
+                    else if (row.Age < 40) row.AgeGroup = '30-40';
+                    else if (row.Age < 50) row.AgeGroup = '40-50';
+                    else if (row.Age < 60) row.AgeGroup = '50-60';
+                    else if (row.Age < 70) row.AgeGroup = '60-70';
+                    else row.AgeGroup = '70+';
+                    
+                    // Add family size
+                    row.FamilySize = row.SibSp + row.Parch;
+                    
+                    return row;
+                  });
+                
+                setData(processedData);
+                setLoading(false);
+              }
+            },
+            error: (err) => {
+              console.error('CSV parsing error:', err);
+              setError('Error parsing CSV data: ' + err.message);
+              setLoading(false);
+            }
+          });
         } catch (err) {
-          setError('Error parsing CSV data: ' + err.message);
+          console.error('Error handling CSV:', err);
+          setError('Error processing CSV data: ' + err.message);
           setLoading(false);
         }
       })
       .catch(err => {
+        console.error('Error loading data:', err);
         setError('Error loading data: ' + err.message);
         setLoading(false);
       });
   }, []);
+
+  // Rest of your component remains the same
+  // ...
 
   // Parse CSV data
   const parseCSV = (text) => {
