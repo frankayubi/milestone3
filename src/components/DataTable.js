@@ -66,7 +66,7 @@ function DataTable({ data, searchTerm, setSearchTerm }) {
                 <td>{passenger.Age}</td>
                 <td>{passenger.Sex}</td>
                 <td>{passenger.Pclass}</td>
-                <td>${passenger.Fare.toFixed(2)}</td>
+                <td>${typeof passenger.Fare === "number" ? passenger.Fare.toFixed(2) : "0.00"}</td>
                 <td>{passenger.Cabin || 'Unknown'}</td>
                 <td>{passenger.Embarked || 'Unknown'}</td>
                 <td>{passenger.Survived ? 'Yes' : 'No'}</td>

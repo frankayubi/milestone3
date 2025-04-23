@@ -29,25 +29,45 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    // Determine proper CSV path based on environment
+    // This handles both local development and GitHub Pages
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    const repoName = 'milestone3'; // Your GitHub repository name
+    
+    // Build the appropriate path depending on where the app is running
+    let csvPath;
+    if (isGitHubPages) {
+      // GitHub Pages - need absolute path with repo name
+      csvPath = `/${repoName}/titanic.csv`;
+    } else {
+      // Local development - just use relative path
+      csvPath = '/titanic.csv';
+    }
+    
+    console.log('Loading CSV from path:', csvPath);
+    
     // Fetch the data
-    fetch(`${process.env.PUBLIC_URL}/titanic.csv`)
+    fetch(csvPath)
       .then(response => {
         if (!response.ok) {
-          throw new Error('Failed to fetch data');
+          throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
         }
         return response.text();
       })
       .then(text => {
         try {
           const parsedData = parseCSV(text);
+          console.log(`Parsed ${parsedData.length} rows of data`);
           setData(parsedData);
           setLoading(false);
         } catch (err) {
+          console.error('Error parsing CSV:', err);
           setError('Error parsing CSV data: ' + err.message);
           setLoading(false);
         }
       })
       .catch(err => {
+        console.error('Error loading data:', err);
         setError('Error loading data: ' + err.message);
         setLoading(false);
       });
@@ -300,7 +320,21 @@ function App() {
   }
 
   if (error) {
-    return <div className="error">Error: {error}</div>;
+    return (
+      <div className="error">
+        <h2>Error</h2>
+        <p>{error}</p>
+        <div className="error-details">
+          <p>Please check that:</p>
+          <ol>
+            <li>The titanic.csv file is in the public folder of your project</li>
+            <li>The file is included in your build</li>
+            <li>The path to the CSV is correct</li>
+          </ol>
+          <p>You can try refreshing the page or checking the browser console for more details.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
