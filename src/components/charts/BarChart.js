@@ -48,10 +48,13 @@ function BarChartComponent({ data, colors }) {
       .attr("fill", colors[1])
       .attr("rx", 2)
       .on("mouseover", function(event, d) {
+        // Use the data bound to this specific element
+        const dataItem = d3.select(this).datum();
+        
         tooltip.transition()
           .duration(200)
           .style("opacity", 0.9);
-        tooltip.html(`${d.gender}<br>Survived: ${d.survived}`)
+        tooltip.html(`${dataItem.gender}<br>Survived: ${dataItem.survived}`)
           .style("left", (event.pageX + 10) + "px")
           .style("top", (event.pageY - 28) + "px");
         
@@ -88,10 +91,13 @@ function BarChartComponent({ data, colors }) {
       .attr("fill", colors[0])
       .attr("rx", 2)
       .on("mouseover", function(event, d) {
+        // Use the data bound to this specific element
+        const dataItem = d3.select(this).datum();
+        
         tooltip.transition()
           .duration(200)
           .style("opacity", 0.9);
-        tooltip.html(`${d.gender}<br>Did Not Survive: ${d.died}`)
+        tooltip.html(`${dataItem.gender}<br>Did Not Survive: ${dataItem.died}`)
           .style("left", (event.pageX + 10) + "px")
           .style("top", (event.pageY - 28) + "px");
         
