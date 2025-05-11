@@ -1,20 +1,130 @@
 // src/components/charts/BarChart.js
-import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useRef } from 'react';
+import * as d3 from 'd3';
+import { createSvgContainer, addGrid, addAxes, createTooltip, addLegend } from '../../utils/d3Utils';
 
 function BarChartComponent({ data, colors }) {
+  const svgRef = useRef();
+  
+  useEffect(() => {
+    if (!data || !data.length) return;
+    
+    // Create SVG container
+    const { svg, g, innerWidth, innerHeight } = createSvgContainer(svgRef);
+    
+    // Create scales
+    const x = d3.scaleBand()
+      .domain(data.map(d => d.gender))
+      .range([0, innerWidth])
+      .padding(0.3);
+      
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(data, d => Math.max(d.survived, d.died))])
+      .nice()
+      .range([innerHeight, 0]);
+    
+    // Add grid
+    addGrid(g, x, y, innerWidth, innerHeight);
+    
+    // Add axes
+    addAxes(g, x, y, innerWidth, innerHeight);
+    
+    // Create tooltip
+    const tooltip = createTooltip();
+    
+    // Create grouped bars
+    const barWidth = x.bandwidth() / 2;
+    
+    // Add bars for survived
+    g.selectAll(".bar-survived")
+      .data(data)
+      .enter()
+      .append("rect")
+      .attr("class", "bar-survived")
+      .attr("x", d => x(d.gender))
+      .attr("width", barWidth)
+      .attr("y", innerHeight)
+      .attr("height", 0)
+      .attr("fill", colors[1])
+      .attr("rx", 2)
+      .on("mouseover", function(event, d) {
+        tooltip.transition()
+          .duration(200)
+          .style("opacity", 0.9);
+        tooltip.html(`${d.gender}<br>Survived: ${d.survived}`)
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 28) + "px");
+        
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr("opacity", 0.8);
+      })
+      .on("mouseout", function() {
+        tooltip.transition()
+          .duration(500)
+          .style("opacity", 0);
+        
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr("opacity", 1);
+      })
+      .transition()
+      .duration(800)
+      .attr("y", d => y(d.survived))
+      .attr("height", d => innerHeight - y(d.survived));
+    
+    // Add bars for died
+    g.selectAll(".bar-died")
+      .data(data)
+      .enter()
+      .append("rect")
+      .attr("class", "bar-died")
+      .attr("x", d => x(d.gender) + barWidth)
+      .attr("width", barWidth)
+      .attr("y", innerHeight)
+      .attr("height", 0)
+      .attr("fill", colors[0])
+      .attr("rx", 2)
+      .on("mouseover", function(event, d) {
+        tooltip.transition()
+          .duration(200)
+          .style("opacity", 0.9);
+        tooltip.html(`${d.gender}<br>Did Not Survive: ${d.died}`)
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 28) + "px");
+        
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr("opacity", 0.8);
+      })
+      .on("mouseout", function() {
+        tooltip.transition()
+          .duration(500)
+          .style("opacity", 0);
+        
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr("opacity", 1);
+      })
+      .transition()
+      .duration(800)
+      .attr("y", d => y(d.died))
+      .attr("height", d => innerHeight - y(d.died));
+    
+    // Add legend
+    addLegend(svg, [
+      { label: 'Survived', color: colors[1], shape: 'rect' },
+      { label: 'Did Not Survive', color: colors[0], shape: 'rect' }
+    ], { x: innerWidth - 150, y: 20 });
+    
+  }, [data, colors]);
+  
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="gender" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="survived" name="Survived" fill={colors[1]} />
-        <Bar dataKey="died" name="Did Not Survive" fill={colors[0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <svg ref={svgRef} width="100%" height="300"></svg>
   );
 }
 
