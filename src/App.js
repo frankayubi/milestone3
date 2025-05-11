@@ -1,9 +1,5 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis
-} from 'recharts';
 import './App.css';
 
 // Import components
@@ -292,7 +288,6 @@ function App() {
   };
 
   // Custom color scales
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#83a6ed'];
   const SURVIVAL_COLORS = { 0: '#ff8884', 1: '#82ca9d' };
 
   if (loading) {

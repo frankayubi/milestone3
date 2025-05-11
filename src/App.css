@@ -404,31 +404,56 @@ table tr.died:hover {
   font-size: 14px;
 }
 
-/* Tooltip Styling */
-.custom-tooltip {
-  background-color: rgba(255, 255, 255, 0.95);
-  border: 1px solid #ddd;
-  padding: 12px;
-  border-radius: 6px;
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+/* D3 Chart Styling */
+.d3-tooltip {
+  pointer-events: none;
+  z-index: 1000;
+  color: #333;
+  line-height: 1.4;
 }
 
-.custom-tooltip p {
-  margin: 5px 0;
-  font-size: 13px;
+.grid line {
+  stroke: #e0e0e0;
+  stroke-width: 1px;
+  stroke-opacity: 0.7;
 }
 
-/* Custom Colors */
-.recharts-default-tooltip {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid #ddd !important;
-  border-radius: 6px !important;
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1) !important;
+.legend text {
+  font-size: 12px;
+  fill: #666;
 }
 
-.recharts-tooltip-item-name,
-.recharts-tooltip-item-value {
-  color: #2c3e50 !important;
+.brush .selection {
+  stroke: #3498db;
+  stroke-opacity: 0.6;
+  fill: #3498db;
+  fill-opacity: 0.1;
+}
+
+.x-axis text, .y-axis text {
+  font-size: 12px;
+  fill: #666;
+}
+
+.x-axis path, .y-axis path {
+  stroke: #ccc;
+}
+
+.reset-zoom {
+  cursor: pointer;
+  font-size: 12px;
+  fill: #3498db;
+  text-decoration: underline;
+}
+
+.data-point {
+  cursor: pointer;
+}
+
+.axis-label {
+  font-size: 12px;
+  text-anchor: middle;
+  fill: #666;
 }
 
 /* Responsive adjustments */
